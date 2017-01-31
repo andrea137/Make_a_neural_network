@@ -7,11 +7,17 @@ class NeuralNetwork():
         # every time the program runs.
         random.seed(1)
 
-        # We model a single neuron, with 3 input connections and 1 output connection.
+        # We model a three layer network:
         # We assign random weights to a 3 x 1 matrix, with values in the range -1 to 1
         # and mean 0.
+
+        # First Layer, 4 neurons with 3 input connections and 4 output connections.
         self.synaptic_weights1 = 2 * random.random((3, 4)) - 1
-        self.synaptic_weights2 = 2 * random.random((4, 1)) - 1
+        # Second Layer, 4 neurons with 4 input connections and 4 output connections.
+        self.synaptic_weights2 = 2 * random.random((4, 4)) - 1
+        # Third Layer, 4 neurons with 1 input connections and 4 output connections.
+        self.synaptic_weights3 = 2 * random.random((4, 1)) - 1
+
 
 
     # The Sigmoid function, which describes an S shaped curve.
@@ -31,12 +37,17 @@ class NeuralNetwork():
     def train(self, training_set_inputs, training_set_outputs, number_of_training_iterations):
         for iteration in range(number_of_training_iterations):
             # Pass the training set through our neural network
-            output1, output2 = self.think(training_set_inputs)
+            output1, output2, output3 = self.think(training_set_inputs)
 
             # Calculate the error of the last layer (The difference between the desired output
             # and the predicted output).
-            error = training_set_outputs - output2
-            delta2 = error * self.__sigmoid_derivative(output2)
+            error = training_set_outputs - output3
+            delta3 = error * self.__sigmoid_derivative(output3)
+
+            # Calculate the error of the second layer (The contribute of layer 2 to the layer 3 error as a function of
+            # the weights)
+            error2 = dot(delta3, self.synaptic_weights3.T)
+            delta2 = error2 * self.__sigmoid_derivative(output2)
 
             # Calculate the error of the first layer (The contribute of layer 1 to the layer 2 error as a function of
             # the weights)
@@ -50,10 +61,14 @@ class NeuralNetwork():
             # Calculate how much to adjust the weights by
             adjustment1 = dot(training_set_inputs.T, delta1)
             adjustment2 = dot(output1.T, delta2)
+            adjustment3 = dot(output2.T, delta3)
+
 
             # Adjust the weights.
             self.synaptic_weights1 += adjustment1
             self.synaptic_weights2 += adjustment2
+            self.synaptic_weights3 += adjustment3
+
 
 
     # The neural network thinks.
@@ -61,9 +76,12 @@ class NeuralNetwork():
         # Pass inputs through our neural network.
         # output of the first layer
         out1 = self.__sigmoid(dot(inputs, self.synaptic_weights1))
-        # takes the output of the first layer as input and compute the final output
+        # takes the output of the first layer as input and compute the second output
         out2 = self.__sigmoid(dot(out1, self.synaptic_weights2))
-        return out1, out2
+        # takes the output of the first layer as input and compute the final output
+        out3 = self.__sigmoid(dot(out2, self.synaptic_weights3))
+
+        return out1, out2, out3
 
 
 if __name__ == "__main__":
@@ -74,6 +92,8 @@ if __name__ == "__main__":
     print("Random starting synaptic weights: ")
     print(neural_network.synaptic_weights1)
     print(neural_network.synaptic_weights2)
+    print(neural_network.synaptic_weights3)
+
 
 
     # See https://medium.com/technology-invention-and-more/how-to-build-a-multi-layered-neural-network-in-python-53ec3d1d326a#.sb6sv57iu
@@ -91,9 +111,10 @@ if __name__ == "__main__":
     print("New synaptic weights after training: ")
     print(neural_network.synaptic_weights1)
     print(neural_network.synaptic_weights2)
+    print(neural_network.synaptic_weights3)
 
 
     # Test the neural network with a new situation.
     print("Considering a new situation [1, 1, 0] -> ?: ")
-    hidden_state, output = neural_network.think(array([1, 1, 0]))
+    _, _, output = neural_network.think(array([1, 1, 0]))
     print(output)
